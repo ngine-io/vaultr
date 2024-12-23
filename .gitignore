@@ -1,0 +1,28 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+.venv/
+.venvs/
+
+# Tooling caches
+.pytest_cache/
+.ruff_cache/
+.coverage
+coverage.xml
+htmlcov/
+
+# Frontend
+node_modules/
+
+# Generated assets, rebuilt by `make assets`
+vaultr/static/css/
+vaultr/static/js/
+
+# Docs build
+site/
+
+# Local secrets
+.env

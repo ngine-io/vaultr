@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="robots" content="noindex, nofollow">
+  <title>{% block title %}{{ app_name }}{% endblock %}</title>
+  <link rel="stylesheet" href="{{ url_for('static', path='/css/tabler.min.css').path }}">
+  <link rel="stylesheet" href="{{ url_for('static', path='/css/custom.css').path }}">
+</head>
+<body>
+  <!-- Tabler's own theme script. It must run here, right after <body> and not
+       deferred, so the stored or system theme is applied before the first paint. -->
+  <script src="{{ url_for('static', path='/js/tabler-theme.min.js').path }}"></script>
+
+  <div class="page">
+    <header class="navbar navbar-expand-md d-print-none">
+      <div class="container-xl">
+        <a class="navbar-brand navbar-brand-autodark pe-0 pe-md-3"
+           href="{{ url_for('index').path }}">
+          <span class="ms-2">{{ app_name }}</span>
+        </a>
+
+        <div class="navbar-nav flex-row order-md-last">
+          <div class="nav-item">
+            <a href="{{ url_for('index').path }}?theme=dark"
+               class="nav-link px-0 hide-theme-dark"
+               data-set-theme="dark" title="Switch to dark theme" aria-label="Switch to dark theme">
+              {% include "partials/icons/moon.html" %}
+            </a>
+            <a href="{{ url_for('index').path }}?theme=light"
+               class="nav-link px-0 hide-theme-light"
+               data-set-theme="light" title="Switch to light theme" aria-label="Switch to light theme">
+              {% include "partials/icons/sun.html" %}
+            </a>
+          </div>
+          <div class="nav-item">
+            <a class="nav-link px-2"
+               href="{{ url_for('index').path }}{{ api_docs_path.lstrip('/') }}">API</a>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <div class="page-wrapper">
+      {% block header %}{% endblock %}
+
+      <div class="page-body">
+        <div class="container-xl">
+          {% block content %}{% endblock %}
+        </div>
+      </div>
+
+      <footer class="footer footer-transparent d-print-none">
+        <div class="container-xl">
+          <div class="row text-center align-items-center flex-row-reverse">
+            <div class="col-12 col-lg-auto mt-3 mt-lg-0">
+              <ul class="list-inline list-inline-dots mb-0">
+                <li class="list-inline-item">
+                  <a href="{{ project_url }}" class="link-secondary"
+                     target="_blank" rel="noopener noreferrer">Vaultr {{ version }} on GitHub</a>
+                </li>
+                <li class="list-inline-item">
+                  <a href="{{ docs_url }}" class="link-secondary"
+                     target="_blank" rel="noopener noreferrer">Documentation</a>
+                </li>
+                <li class="list-inline-item">
+                  Licensed under
+                  <a href="{{ license_url }}" class="link-secondary"
+                     target="_blank" rel="noopener noreferrer">{{ license_name }}</a>
+                </li>
+              </ul>
+            </div>
+            <div class="col-12 col-lg-auto">
+              <p class="text-secondary mb-0">
+                Secrets are encrypted server side with the project passphrase.
+                Nothing is stored.
+              </p>
+            </div>
+          </div>
+        </div>
+      </footer>
+    </div>
+  </div>
+
+  <script src="{{ url_for('static', path='/js/htmx.min.js').path }}"></script>
+  <script src="{{ url_for('static', path='/js/app.js').path }}"></script>
+</body>
+</html>

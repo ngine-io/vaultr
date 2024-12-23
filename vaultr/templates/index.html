@@ -1,0 +1,77 @@
+{% extends "layout.html" %}
+
+{% block header %}
+<div class="page-header d-print-none">
+  <div class="container-xl">
+    <div class="row g-2 align-items-center">
+      <div class="col">
+        <h2 class="page-title">Encrypt a secret</h2>
+        <div class="text-secondary mt-1">
+          Choose a project. Your secret is encrypted with that project's Ansible Vault
+          passphrase, which is never shown to you.
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="row row-cards">
+  <div class="col-12">
+    <form class="card"
+          method="post"
+          action="{{ url_for('web-encrypt').path }}"
+          hx-post="{{ url_for('web-encrypt').path }}"
+          hx-target="#result"
+          hx-swap="innerHTML"
+          hx-disabled-elt="find button[type='submit']">
+
+      <div class="card-body">
+        <div class="mb-3">
+          <label class="form-label required" for="project">Project</label>
+          <select class="form-select" id="project" name="project" required>
+            <option value="" disabled {% if not selected_project %}selected{% endif %}>
+              Select a project
+            </option>
+            {% for project in projects %}
+            <option value="{{ project.name }}"
+                    {% if project.name == selected_project %}selected{% endif %}>
+              {{ project.name }}{% if project.description %} — {{ project.description }}{% endif %}
+            </option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label required" for="secret">Secret</label>
+          <textarea class="form-control font-monospace" id="secret" name="secret" rows="6"
+                    required autocomplete="off" spellcheck="false"
+                    placeholder="Value to encrypt"></textarea>
+          <small class="form-hint">
+            Line endings are normalised and the trailing newline is removed.
+          </small>
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label" for="variable_name">Variable name</label>
+          <input class="form-control font-monospace" type="text" id="variable_name"
+                 name="variable_name" value="{{ variable_name or '' }}"
+                 autocomplete="off" spellcheck="false" placeholder="db_password">
+          <small class="form-hint">
+            Optional. Also returns a ready to paste <code>key: !vault |</code> YAML block.
+          </small>
+        </div>
+      </div>
+
+      <div class="card-footer text-end">
+        <button type="submit" class="btn btn-primary">Encrypt</button>
+      </div>
+    </form>
+  </div>
+
+  <div class="col-12" id="result">
+    {% include "partials/result.html" %}
+  </div>
+</div>
+{% endblock %}

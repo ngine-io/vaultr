@@ -1,0 +1,6 @@
+---
+# Placeholder shipped in the container image. Mount your own over /app/config.yml.
+projects:
+  - name: example
+    description: Replace this file with your own project definitions
+    passphrase_env: VAULTR_PASSPHRASE_EXAMPLE

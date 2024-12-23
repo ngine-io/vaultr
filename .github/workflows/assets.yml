@@ -1,0 +1,28 @@
+name: Frontend assets
+
+on: [push, pull_request]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v6
+        with:
+          node-version: "22"
+          cache: npm
+      - name: Install
+        run: npm ci
+      - name: Build the stylesheet and vendored scripts
+        run: npm run build
+      # Guard against a partial collection: the stylesheet and both theme related
+      # scripts must be present, and Tabler's dark theme rules must be in the CSS.
+      - name: Verify the build output
+        run: |
+          test -s vaultr/static/css/tabler.min.css
+          test -s vaultr/static/css/custom.css
+          test -s vaultr/static/js/tabler-theme.min.js
+          test -s vaultr/static/js/htmx.min.js
+          test -s vaultr/static/js/app.js
+          grep -q 'data-bs-theme=dark' vaultr/static/css/tabler.min.css
+          grep -q 'hide-theme-dark' vaultr/static/css/tabler.min.css

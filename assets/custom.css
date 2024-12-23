@@ -1,0 +1,15 @@
+/* Vaultr specific tweaks on top of Tabler. Loaded after tabler.min.css.
+   Kept deliberately small: anything Tabler already provides is used as-is. */
+
+/* Vault strings and YAML are fixed width and must not be reflowed or spellchecked. */
+.vault-output {
+  white-space: pre;
+  overflow-x: auto;
+  tab-size: 4;
+}
+
+/* The generated vault body is long; keep it readable without dominating the page. */
+textarea.vault-output {
+  font-size: 0.75rem;
+  line-height: 1.35;
+}

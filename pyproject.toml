@@ -1,0 +1,128 @@
+[build-system]
+requires = ["setuptools>=77", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "vaultr-ngine"
+description = "Web UI and API to encrypt secrets into Ansible Vault strings."
+readme = "README.md"
+license = "Apache-2.0"
+license-files = ["LICENSE"]
+requires-python = ">=3.11"
+authors = [{ name = "René Moser", email = "mail@renemoser.net" }]
+keywords = ["ansible", "vault", "secrets", "encryption", "fastapi"]
+classifiers = [
+    "Intended Audience :: Developers",
+    "Intended Audience :: System Administrators",
+    "Development Status :: 4 - Beta",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "Operating System :: OS Independent",
+    "Environment :: Web Environment",
+    "Topic :: Security :: Cryptography",
+]
+dynamic = ["version"]
+dependencies = [
+    # Reference implementation of the vault format: ansible.parsing.vault.
+    "ansible-core>=2.16",
+    "fastapi>=0.116",
+    # HTTP_413_CONTENT_TOO_LARGE / HTTP_422_UNPROCESSABLE_CONTENT replaced the
+    # older status constant names, which now emit deprecation warnings.
+    "starlette>=0.47",
+    "jinja2",
+    "loguru",
+    # MCP server mounted at /mcp. 2.x renamed FastMCP to MCPServer and moved the
+    # client entry point to streamable_http_client.
+    "mcp>=2.1",
+    # v2 API: ConfigDict, model_validator, model_validate.
+    "pydantic>=2",
+    "pydantic-settings>=2",
+    "python-dotenv",
+    # Form parsing for the HTML UI.
+    "python-multipart",
+    "PyYAML",
+    "uvicorn[standard]>=0.30",
+]
+
+[dependency-groups]
+dev = [
+    "httpx2",
+    "pytest>=7.0.0",
+    "pytest-cov",
+    "ruff",
+]
+docs = [
+    "mkdocs",
+    "mkdocs-material",
+]
+
+[project.urls]
+Homepage = "https://github.com/ngine-io/vaultr"
+Documentation = "https://ngine-io.github.io/vaultr/"
+Source = "https://github.com/ngine-io/vaultr"
+
+[project.scripts]
+vaultr-ngine = "vaultr.__main__:main"
+
+[tool.setuptools.packages.find]
+include = ["vaultr*"]
+
+[tool.setuptools.package-data]
+# Recursive globs; a plain "templates/*.html" silently drops templates/partials/.
+vaultr = ["templates/**/*.html", "static/**/*"]
+
+[tool.setuptools.dynamic]
+version = { attr = "vaultr.version.__version__" }
+
+[tool.pytest.ini_options]
+minversion = "7.0"
+testpaths = ["tests"]
+addopts = "-ra --strict-markers --strict-config"
+filterwarnings = [
+    "error",
+    "default::DeprecationWarning",
+]
+
+[tool.coverage.run]
+source = ["vaultr"]
+branch = true
+
+[tool.coverage.report]
+show_missing = true
+exclude_lines = [
+    "pragma: no cover",
+    "if TYPE_CHECKING:",
+    "raise NotImplementedError",
+    'if __name__ == "__main__":',
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = [
+    "E",   # pycodestyle errors
+    "F",   # pyflakes
+    "W",   # pycodestyle warnings
+    "I",   # isort
+    "UP",  # pyupgrade
+    "B",   # flake8-bugbear
+    "C4",  # flake8-comprehensions
+    "A",   # flake8-builtins
+    "RET", # flake8-return
+    "SIM", # flake8-simplify
+    "S",   # flake8-bandit
+]
+ignore = [
+    "E501",   # line length is handled by the formatter
+    "B008",   # FastAPI dependencies are function calls in defaults by design
+    "SIM105",
+]
+
+[tool.ruff.lint.per-file-ignores]
+# Tests carry hard coded sample passphrases and assert on them.
+"tests/*" = ["S101", "S105", "S106"]

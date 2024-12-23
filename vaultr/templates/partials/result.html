@@ -1,0 +1,50 @@
+{% if error %}
+<div class="alert alert-danger" role="alert">
+  <div class="d-flex">
+    <div>{% include "partials/icons/alert-triangle.html" %}</div>
+    <div>
+      <h4 class="alert-heading">Could not encrypt</h4>
+      <div class="alert-description">{{ error }}</div>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+{% if vault_text %}
+<div class="card">
+  <div class="card-header">
+    <h3 class="card-title">Encrypted</h3>
+    <div class="card-actions">
+      <span class="badge bg-green-lt">{{ selected_project }}</span>
+    </div>
+  </div>
+
+  <div class="card-body">
+    <div class="mb-3">
+      <div class="d-flex align-items-center justify-content-between mb-1">
+        <label class="form-label mb-0" for="vault-text">Vault string</label>
+        <button type="button" class="btn btn-sm" data-copy-target="vault-text">
+          {% include "partials/icons/copy.html" %}
+          <span data-copy-label>Copy</span>
+        </button>
+      </div>
+      <textarea class="form-control font-monospace vault-output" id="vault-text" rows="8"
+                readonly spellcheck="false">{{ vault_text }}</textarea>
+    </div>
+
+    {% if yaml_snippet %}
+    <div>
+      <div class="d-flex align-items-center justify-content-between mb-1">
+        <label class="form-label mb-0" for="yaml-snippet">YAML snippet</label>
+        <button type="button" class="btn btn-sm" data-copy-target="yaml-snippet">
+          {% include "partials/icons/copy.html" %}
+          <span data-copy-label>Copy</span>
+        </button>
+      </div>
+      <textarea class="form-control font-monospace vault-output" id="yaml-snippet" rows="10"
+                readonly spellcheck="false">{{ yaml_snippet }}</textarea>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endif %}
