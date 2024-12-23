@@ -1,0 +1,7 @@
+fastapi
+uvicorn
+ansible-core
+python-dotenv
+loguru
+jinja2
+python-multipart

@@ -1,0 +1,38 @@
+{% extends "layout.html" %}
+
+{% block title %}Index{% endblock %}
+
+{% block content %}
+<section class="container section">
+    <h2 class="title is-4">To Encrypt</h2>
+    <form class="form" action="/encrypt" method="post" hx-boost="true">
+      <div class="field">
+        <div class="control">
+          <div class="select">
+            <select name="project">
+              <option>Select Project</option>
+              <option>prod-ngine</option>
+              <option>test-ngine</option>
+            </select>
+          </div>
+        </div>
+      </div>
+      <div class="field">
+        <p class="control">
+          <textarea name="content" class="textarea" placeholder="Value to be encrypted" rows="6"></textarea>
+        </p>
+      </div>
+      <div class="control">
+        <button class="button is-primary">Encrypt</button>
+      </div>
+    </form>
+  </section>
+  <hr/>
+{% if encrypted_content %}
+  <section class="container section">
+    <h2 class="title is-4">Result</h2>
+    <textarea class="textarea" rows="6">{{ encrypted_content }}</textarea>
+  </section>
+{% endif %}
+
+{% endblock %}

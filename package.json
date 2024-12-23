@@ -1,0 +1,20 @@
+{
+  "name": "vaultr-bulma",
+  "version": "1.0.0",
+  "main": "main.scss",
+  "devDependencies": {
+    "node-sass": "^7.0.1"
+  },
+  "scripts": {
+    "css-build": "sass --load-path=node_modules main.scss ./static/css/main.css",
+    "css-watch": "npm run css-build -- --watch",
+    "start": "npm run css-watch"
+  },
+  "dependencies": {
+    "@vizuaalog/bulmajs": "^0.12.2",
+    "bulma": "^1.0.2",
+    "htmx.org": "^2.0.0",
+    "hyperscript.org": "^0.9.12",
+    "sass": "^1.79.5"
+  }
+}

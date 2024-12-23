@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link href="/static/css/main.css" rel="stylesheet">
+  <title>{% block title %}{% endblock %}</title>
+</head>
+<body>
+  <nav class="navbar is-primary" role="navigation" aria-label="main navigation">
+    <div class="navbar-brand">
+      <a class="navbar-item" href="/">Ansible Vault Web Service</a>
+
+      <a role="button" class="navbar-burger" aria-label="menu" aria-expanded="false">
+        <span aria-hidden="true"></span>
+        <span aria-hidden="true"></span>
+        <span aria-hidden="true"></span>
+        <span aria-hidden="true"></span>
+      </a>
+    </div>
+  </nav>
+
+{% block content %}
+{% endblock %}
+
+  <script src="/static/js/_hyperscript.min.js"></script>
+  <script src="/static/js/htmx.min.js"></script>
+  <script src="/static/js/bulma.js"></script>
+</body>
+</html>

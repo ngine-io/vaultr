@@ -1,0 +1,43 @@
+@charset "utf-8";
+
+$sky: #0077b6;
+$brown: #757763;
+$beige-light: #d0d1cd;
+$beige-lighter: #eff0eb;
+$dark-grey-light: #24292f;
+$white: #ffffff;
+
+@use "bulma/sass" with (
+  $family-primary: '"Roboto Condensed", sans-serif',
+  $link: $sky,
+  $primary: $brown,
+  $box-background-color: $dark-grey-light,
+  $table-head-background-color: $dark-grey-light,
+);
+
+@import url('https://fonts.cdnfonts.com/css/roboto');
+@import url('https://fonts.cdnfonts.com/css/roboto-condensed');
+
+html,
+body {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+body > footer {
+    margin-top: auto;
+}
+
+label.required:after {
+    content: "\a0*";
+    color: #ebecf0;
+}
+
+table {
+    max-width: 100%;
+    white-space: nowrap;
+}
+
+.input {
+  --bulma-input-radius: 0.1rem;
+}

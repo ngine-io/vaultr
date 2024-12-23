@@ -1,0 +1,6 @@
+---
+projects:
+  - name: prod-myproject
+    secret: secret1
+  - name: test-myproject
+    secret: secret2
