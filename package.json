@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "main": "main.scss",
   "devDependencies": {
-    "node-sass": "^7.0.1"
+    "node-sass": "^9.0.0"
   },
   "scripts": {
     "css-build": "sass --load-path=node_modules main.scss ./static/css/main.css",
