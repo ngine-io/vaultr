@@ -1,0 +1,16 @@
+---
+# Projects available for encryption. Each one carries the Ansible Vault passphrase
+# its secrets are encrypted with. Users pick a project, they never see the passphrase.
+#
+# Exactly one passphrase source per project:
+#   passphrase:      inline literal — convenient for local development only
+#   passphrase_env:  name of an environment variable holding the passphrase
+#   passphrase_file: path to a file holding the passphrase, e.g. a mounted secret
+projects:
+  - name: prod-myproject
+    description: Production
+    passphrase_env: VAULTR_PASSPHRASE_PROD
+
+  - name: test-myproject
+    description: Staging
+    passphrase_env: VAULTR_PASSPHRASE_TEST

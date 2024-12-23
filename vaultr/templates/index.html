@@ -1,0 +1,60 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<div class="card bg-base-100 shadow-sm">
+  <div class="card-body">
+    <h1 class="card-title">Encrypt a secret</h1>
+    <p class="text-base-content/70">
+      Choose a project. Your secret is encrypted with that project's Ansible Vault
+      passphrase, which is never shown to you.
+    </p>
+
+    <form class="mt-4 flex flex-col gap-4"
+          method="post"
+          action="{{ url_for('web-encrypt').path }}"
+          hx-post="{{ url_for('web-encrypt').path }}"
+          hx-target="#result"
+          hx-swap="innerHTML"
+          hx-disabled-elt="find button[type='submit']">
+
+      <fieldset class="fieldset">
+        <legend class="fieldset-legend">Project</legend>
+        <select name="project" class="select w-full" required>
+          <option value="" disabled {% if not selected_project %}selected{% endif %}>
+            Select a project
+          </option>
+          {% for project in projects %}
+          <option value="{{ project.name }}"
+                  {% if project.name == selected_project %}selected{% endif %}>
+            {{ project.name }}{% if project.description %} — {{ project.description }}{% endif %}
+          </option>
+          {% endfor %}
+        </select>
+      </fieldset>
+
+      <fieldset class="fieldset">
+        <legend class="fieldset-legend">Secret</legend>
+        <textarea name="secret" rows="6" required
+                  class="textarea w-full font-mono"
+                  placeholder="Value to encrypt"></textarea>
+        <p class="label">Line endings are normalised and the trailing newline is removed.</p>
+      </fieldset>
+
+      <fieldset class="fieldset">
+        <legend class="fieldset-legend">Variable name <span class="font-normal">(optional)</span></legend>
+        <input type="text" name="variable_name" class="input w-full font-mono"
+               value="{{ variable_name or '' }}" placeholder="db_password">
+        <p class="label">Also returns a ready to paste <code>key: !vault |</code> YAML block.</p>
+      </fieldset>
+
+      <div>
+        <button type="submit" class="btn btn-primary">Encrypt</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div id="result" class="mt-6">
+  {% include "partials/result.html" %}
+</div>
+{% endblock %}

@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex, nofollow">
+  <link rel="stylesheet" href="{{ url_for('static', path='/css/main.css').path }}">
+  <title>{% block title %}{{ app_name }}{% endblock %}</title>
+</head>
+<body class="min-h-screen flex flex-col bg-base-200">
+
+  <header class="navbar bg-base-100 border-b border-base-300">
+    <div class="container mx-auto max-w-4xl px-4">
+      <a class="btn btn-ghost text-lg font-semibold" href="{{ url_for('index').path }}">
+        {{ app_name }}
+      </a>
+      <div class="ml-auto">
+        <a class="btn btn-ghost btn-sm" href="{{ url_for('index').path }}docs">API</a>
+      </div>
+    </div>
+  </header>
+
+  <main class="flex-1 container mx-auto max-w-4xl px-4 py-8">
+    {% block content %}{% endblock %}
+  </main>
+
+  <footer class="footer footer-center bg-base-100 border-t border-base-300 p-4 text-sm text-base-content/60">
+    <aside class="flex flex-col items-center gap-1">
+      <p>Secrets are encrypted server side with the project passphrase. Nothing is stored.</p>
+      <p class="flex flex-wrap items-center justify-center gap-x-2 gap-y-1">
+        <a class="link link-hover" href="{{ project_url }}"
+           target="_blank" rel="noopener noreferrer">Vaultr {{ version }} on GitHub</a>
+        <span aria-hidden="true">·</span>
+        <a class="link link-hover" href="{{ docs_url }}"
+           target="_blank" rel="noopener noreferrer">Documentation</a>
+        <span aria-hidden="true">·</span>
+        <span>Licensed under
+          <a class="link link-hover" href="{{ license_url }}"
+             target="_blank" rel="noopener noreferrer">{{ license_name }}</a>
+        </span>
+      </p>
+    </aside>
+  </footer>
+
+  <script src="{{ url_for('static', path='/js/htmx.min.js').path }}"></script>
+  <script src="{{ url_for('static', path='/js/app.js').path }}"></script>
+</body>
+</html>

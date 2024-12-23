@@ -1,0 +1,19 @@
+{
+  "name": "vaultr-assets",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Frontend assets for Vaultr: Tailwind CSS, daisyUI and htmx.",
+  "scripts": {
+    "build:css": "tailwindcss -i assets/main.css -o vaultr/static/css/main.css --minify",
+    "watch:css": "tailwindcss -i assets/main.css -o vaultr/static/css/main.css --watch",
+    "build:js": "copyfiles -f node_modules/htmx.org/dist/htmx.min.js assets/app.js vaultr/static/js",
+    "build": "npm run build:css && npm run build:js"
+  },
+  "devDependencies": {
+    "@tailwindcss/cli": "^4.1.0",
+    "copyfiles": "^2.4.1",
+    "daisyui": "^5.0.0",
+    "htmx.org": "^2.0.4",
+    "tailwindcss": "^4.1.0"
+  }
+}

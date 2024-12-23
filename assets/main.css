@@ -1,0 +1,8 @@
+@import "tailwindcss";
+
+/* Tailwind cannot discover utility classes in Jinja templates on its own. */
+@source "../vaultr/templates";
+
+@plugin "daisyui" {
+  themes: light --default, dark --prefersdark;
+}

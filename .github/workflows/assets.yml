@@ -1,0 +1,25 @@
+name: Frontend assets
+
+on: [push, pull_request]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v6
+        with:
+          node-version: "22"
+          cache: npm
+      - name: Install
+        run: npm ci
+      - name: Build the stylesheet and vendored scripts
+        run: npm run build
+      # A stylesheet that built but contains none of the daisyUI component classes
+      # means the Tailwind @source scan missed the templates.
+      - name: Verify the build output
+        run: |
+          test -s vaultr/static/css/main.css
+          test -s vaultr/static/js/htmx.min.js
+          test -s vaultr/static/js/app.js
+          grep -q '\.btn' vaultr/static/css/main.css
