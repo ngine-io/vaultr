@@ -12,7 +12,7 @@
   },
   "dependencies": {
     "@vizuaalog/bulmajs": "^0.12.2",
-    "bulma": "^1.0.3",
+    "bulma": "^1.0.4",
     "htmx.org": "^2.0.0",
     "hyperscript.org": "^0.9.12",
     "sass": "^1.83.4"
