@@ -1,9 +1,9 @@
 annotated-types==0.7.0
 ansible-core==2.18.1
 anyio==4.7.0
-cffi==1.17.1
+cffi==2.0.0
 click==8.1.8
-cryptography==44.0.0
+cryptography==46.0.6
 fastapi==0.115.7
 h11==0.14.0
 idna==3.10
