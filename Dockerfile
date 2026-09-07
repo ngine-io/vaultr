@@ -6,7 +6,7 @@ FROM docker.io/python:3.14.7-slim AS base
 
 # Asset stage: compile Tailwind CSS with daisyUI and collect the vendored JS.
 # Tailwind scans the Jinja templates for utility classes, so they are needed here.
-FROM docker.io/node:22-slim AS assets
+FROM docker.io/node:26-slim AS assets
 
 WORKDIR /build
 COPY package.json package-lock.json ./
