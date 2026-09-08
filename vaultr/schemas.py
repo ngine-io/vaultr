@@ -15,6 +15,11 @@ class ProjectOut(BaseModel):
     name: str
     description: str | None = None
     vault_id: str | None = None
+    reencrypt_targets: list[str] | None = Field(
+        default=None,
+        description="Projects this project's secrets may be re-encrypted into. "
+        "`null` means any project.",
+    )
 
 
 class ProjectListOut(BaseModel):
@@ -50,6 +55,47 @@ class EncryptOut(BaseModel):
     project: str
     vault_id: str | None = None
     vault_text: str = Field(description="The `$ANSIBLE_VAULT` string.")
+    yaml_snippet: str | None = Field(
+        default=None,
+        description="`variable: !vault |` block, present when `variable_name` was given.",
+    )
+
+
+class ReencryptIn(BaseModel):
+    """A re-encryption request."""
+
+    model_config = ConfigDict(
+        extra="forbid",
+        json_schema_extra={
+            "example": {
+                "source_project": "test-myproject",
+                "target_project": "prod-myproject",
+                "vault_text": "$ANSIBLE_VAULT;1.1;AES256\n6430...",
+            }
+        },
+    )
+
+    source_project: ProjectName = Field(description="Project the secret is encrypted for.")
+    target_project: ProjectName = Field(description="Project to re-encrypt it for.")
+    vault_text: str = Field(
+        min_length=1,
+        description="The `$ANSIBLE_VAULT` string. A whole `key: !vault |` YAML block "
+        "is accepted too.",
+    )
+    variable_name: str | None = Field(
+        default=None,
+        description="Ansible variable name. When given, a ready to paste YAML snippet "
+        "is returned alongside the raw vault string.",
+    )
+
+
+class ReencryptOut(BaseModel):
+    """The re-encrypted result."""
+
+    source_project: str
+    target_project: str
+    vault_id: str | None = None
+    vault_text: str = Field(description="The re-encrypted `$ANSIBLE_VAULT` string.")
     yaml_snippet: str | None = Field(
         default=None,
         description="`variable: !vault |` block, present when `variable_name` was given.",

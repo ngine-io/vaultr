@@ -15,6 +15,10 @@
   <div class="card-header">
     <h3 class="card-title">Encrypted</h3>
     <div class="card-actions">
+      {% if source_project %}
+      <span class="badge bg-secondary-lt">{{ source_project }}</span>
+      <span class="text-secondary mx-1" aria-label="re-encrypted to">&rarr;</span>
+      {% endif %}
       <span class="badge bg-green-lt">{{ selected_project }}</span>
     </div>
   </div>

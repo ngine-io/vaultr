@@ -47,6 +47,32 @@ whitespace is preserved exactly.
     The [API](api.md) does neither, and encrypts the plaintext byte for byte. Use it
     when the exact bytes matter, for example for a certificate key.
 
+## Re-encrypting a secret
+
+The **Re-encrypt** page moves a secret that is already encrypted from one project to
+another, for example promoting a value from staging into production. You never see the
+plaintext: Vaultr decrypts it with the source project's passphrase and immediately
+re-encrypts it with the target's.
+
+1. **From project** — the project the secret is encrypted for today.
+2. **To project** — the project it should be encrypted for instead.
+3. **Encrypted secret** — paste the `$ANSIBLE_VAULT` block, or the whole
+   `key: !vault |` snippet straight out of your `group_vars`. The indentation is
+   handled for you.
+4. **Variable name** *(optional)* — as on the encryption page.
+
+If the secret does not belong to the project you picked as the source, you get an
+error saying so rather than a result; that is the expected way to discover you chose
+the wrong source.
+
+The page is hidden and both routes return `404` when
+`VAULTR_REENCRYPT_ENABLED=false`.
+
+!!! warning "Re-encryption is privileged"
+    Whoever can move a secret out of a project can read it, if they know the target
+    project's passphrase. Restrict it with `reencrypt_targets`; see
+    [Security](security.md#re-encryption).
+
 ## Copy buttons
 
 The copy buttons use the clipboard API, which browsers only allow on `https://` or

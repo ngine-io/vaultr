@@ -33,7 +33,7 @@ make install
 vaultr/
 ├── app.py            # application factory, middleware, lifespan
 ├── config.py         # config.yml schema and passphrase resolution
-├── vault.py          # encryption service, the security critical core
+├── vault.py          # encrypt / re-encrypt service, the security critical core
 ├── mcp_server.py     # MCP tools, mounted at /mcp
 ├── settings.py       # environment driven settings
 ├── security.py       # bearer token authentication

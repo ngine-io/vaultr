@@ -53,3 +53,12 @@ def test_auth_enabled_follows_the_tokens() -> None:
 )
 def test_root_path_is_normalised(raw: str, expected: str) -> None:
     assert make(root_path=raw).root_path == expected
+
+
+def test_reencrypt_is_enabled_by_default() -> None:
+    assert make().reencrypt_enabled is True
+
+
+def test_reencrypt_can_be_disabled(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("VAULTR_REENCRYPT_ENABLED", "false")
+    assert make().reencrypt_enabled is False

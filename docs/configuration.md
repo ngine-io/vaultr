@@ -31,6 +31,7 @@ first request.
 | `name`            | yes      | Unique identifier, shown in the UI and used in the API.             |
 | `description`     | no       | Free text shown next to the name in the project picker.             |
 | `vault_id`        | no       | Ansible vault ID; see [Vault IDs](#vault-ids).                      |
+| `reencrypt_targets` | no     | Projects this one's secrets may be moved into; see below.           |
 | `passphrase`      | one of   | The passphrase as a literal.                                        |
 | `passphrase_env`  | one of   | Name of an environment variable holding the passphrase.             |
 | `passphrase_file` | one of   | Path to a file holding the passphrase.                              |
@@ -79,6 +80,39 @@ none, or more than one, is a configuration error.
 !!! warning "Passphrases are read once"
     Every passphrase is resolved at startup. Rotating one means restarting the
     service.
+
+## Re-encryption targets
+
+[Re-encryption](web.md#re-encrypting-a-secret) decrypts a secret with one project's
+passphrase and re-encrypts it with another's. `reencrypt_targets` lists which target
+projects that is permitted for:
+
+```yaml
+projects:
+  - name: prod-myproject
+    passphrase_env: VAULTR_PASSPHRASE_PROD
+    reencrypt_targets: []          # nothing may be moved out of production
+
+  - name: test-myproject
+    passphrase_env: VAULTR_PASSPHRASE_TEST
+    reencrypt_targets:
+      - prod-myproject             # staging may be promoted into production
+```
+
+| Value            | Meaning                                                  |
+| ---------------- | -------------------------------------------------------- |
+| unset (default)  | The secret may be re-encrypted into any project.          |
+| a list of names  | Only those projects are allowed as a target.              |
+| `[]`             | The secret may not be re-encrypted into anything.         |
+
+Every name must match a configured project, so a typo is a startup error rather than a
+flow that silently stops working. The restriction is one directional: it says where
+this project's secrets may go, not what may be moved into it.
+
+!!! warning "This is an access control decision, not a convenience setting"
+    Being able to re-encrypt out of a project is equivalent to being able to read it,
+    for anyone who knows the target project's passphrase. See
+    [Security](security.md#re-encryption).
 
 ## Vault IDs
 

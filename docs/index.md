@@ -31,9 +31,13 @@ graph LR
   [Tabler](https://tabler.io), with a light and dark theme, enhanced with
   [htmx](https://htmx.org).
 - **JSON API** — with an OpenAPI schema and interactive docs at `/api`.
-- **[MCP server](mcp.md)** — agents encrypt through the same service at `/mcp`.
+- **[MCP server](mcp.md)** — agents encrypt and re-encrypt through the same
+  service at `/mcp`.
 - **YAML snippets** — optionally returns the `key: !vault |` block that
   `ansible-vault encrypt_string --stdin-name` produces, ready to paste.
+- **Re-encryption** — move an existing secret from one project's passphrase to
+  another's, for example promoting a staging value into production, without ever
+  seeing the plaintext.
 - **Vault IDs** — a project can carry an Ansible vault ID, emitting a labelled
   `1.2` header instead of the plain `1.1` one.
 - **Flexible passphrase sources** — inline, from the environment, or from a mounted

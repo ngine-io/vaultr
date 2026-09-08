@@ -1,0 +1,100 @@
+{% extends "layout.html" %}
+
+{% block title %}Re-encrypt · {{ app_name }}{% endblock %}
+
+{% block header %}
+<div class="page-header d-print-none">
+  <div class="container-xl">
+    <div class="row g-2 align-items-center">
+      <div class="col">
+        <h2 class="page-title">Re-encrypt a secret</h2>
+        <div class="text-secondary mt-1">
+          Move an already encrypted secret from one project to another. It is decrypted
+          with the source project's passphrase and immediately re-encrypted with the
+          target's. The plaintext is never shown or stored.
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="row row-cards">
+  <div class="col-12">
+    <form class="card"
+          method="post"
+          action="{{ url_for('web-reencrypt').path }}"
+          hx-post="{{ url_for('web-reencrypt').path }}"
+          hx-target="#result"
+          hx-swap="innerHTML"
+          hx-disabled-elt="find button[type='submit']">
+
+      <div class="card-body">
+        <div class="row">
+          <div class="col-md-6 mb-3">
+            <label class="form-label required" for="source_project">From project</label>
+            <select class="form-select" id="source_project" name="source_project" required>
+              <option value="" disabled {% if not source_project %}selected{% endif %}>
+                Select the current project
+              </option>
+              {% for project in projects %}
+              <option value="{{ project.name }}"
+                      {% if project.name == source_project %}selected{% endif %}>
+                {{ project.name }}{% if project.description %} — {{ project.description }}{% endif %}
+              </option>
+              {% endfor %}
+            </select>
+            <small class="form-hint">The project the secret is encrypted for today.</small>
+          </div>
+
+          <div class="col-md-6 mb-3">
+            <label class="form-label required" for="target_project">To project</label>
+            <select class="form-select" id="target_project" name="target_project" required>
+              <option value="" disabled {% if not selected_project %}selected{% endif %}>
+                Select the new project
+              </option>
+              {% for project in projects %}
+              <option value="{{ project.name }}"
+                      {% if project.name == selected_project %}selected{% endif %}>
+                {{ project.name }}{% if project.description %} — {{ project.description }}{% endif %}
+              </option>
+              {% endfor %}
+            </select>
+            <small class="form-hint">The project it should be encrypted for instead.</small>
+          </div>
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label required" for="vault_text">Encrypted secret</label>
+          <textarea class="form-control font-monospace vault-output" id="vault_text"
+                    name="vault_text" rows="8" required autocomplete="off" spellcheck="false"
+                    placeholder="$ANSIBLE_VAULT;1.1;AES256&#10;6430..."></textarea>
+          <small class="form-hint">
+            Paste the <code>$ANSIBLE_VAULT</code> block, or the whole
+            <code>key: !vault |</code> snippet. Indentation is handled for you.
+          </small>
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label" for="variable_name">Variable name</label>
+          <input class="form-control font-monospace" type="text" id="variable_name"
+                 name="variable_name" value="{{ variable_name or '' }}"
+                 autocomplete="off" spellcheck="false" placeholder="db_password">
+          <small class="form-hint">
+            Optional. Also returns a ready to paste <code>key: !vault |</code> YAML block.
+          </small>
+        </div>
+      </div>
+
+      <div class="card-footer text-end">
+        <button type="submit" class="btn btn-primary">Re-encrypt</button>
+      </div>
+    </form>
+  </div>
+
+  <div class="col-12" id="result">
+    {% include "partials/result.html" %}
+  </div>
+</div>
+{% endblock %}

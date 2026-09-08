@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from collections.abc import AsyncIterator, Awaitable, Callable
+from collections.abc import AsyncGenerator, Awaitable, Callable
 from contextlib import asynccontextmanager
 from pathlib import Path
 
@@ -23,6 +23,10 @@ from vaultr.version import __version__
 
 STATIC_DIR = Path(__file__).resolve().parent / "static"
 
+# Tabler's prebuilt stylesheet, copied in by `make assets`. Its absence is what tells
+# us the asset step has not run.
+STYLESHEET_NAME = "tabler.min.css"
+
 DESCRIPTION = """
 Encrypt a secret into an [Ansible Vault](https://docs.ansible.com/ansible/latest/vault_guide/)
 string without ever handling the vault passphrase yourself.
@@ -33,7 +37,7 @@ secret, and receive the encrypted string. Decryption is intentionally not offere
 
 
 @asynccontextmanager
-async def lifespan(app: FastAPI) -> AsyncIterator[None]:
+async def lifespan(app: FastAPI) -> AsyncGenerator[None]:
     """Load the configuration and resolve every passphrase before serving traffic."""
     settings: Settings = app.state.settings
 
@@ -100,7 +104,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         StaticFiles(directory=str(STATIC_DIR), check_dir=False),
         name="static",
     )
-    if not (STATIC_DIR / "css" / "main.css").is_file():
+    if not (STATIC_DIR / "css" / STYLESHEET_NAME).is_file():
         logger.warning("Stylesheet is missing, the UI will be unstyled. Run `make assets`.")
 
     app.include_router(health.router)
@@ -113,6 +117,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             lambda: app.state.vault_service,
             max_secret_length=settings.max_secret_length,
             app_name=settings.app_name,
+            reencrypt_enabled=settings.reencrypt_enabled,
         )
         # The sub-app serves the endpoint at its root so the mount point supplies the
         # /mcp prefix rather than doubling it.
