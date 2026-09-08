@@ -10,7 +10,13 @@ projects:
   - name: prod-myproject
     description: Production
     passphrase_env: VAULTR_PASSPHRASE_PROD
+    # Re-encrypting out of a project lets anyone who knows the target passphrase read
+    # it, so production secrets are not allowed to leave.
+    reencrypt_targets: []
 
   - name: test-myproject
     description: Staging
     passphrase_env: VAULTR_PASSPHRASE_TEST
+    # Staging values may be promoted into production.
+    reencrypt_targets:
+      - prod-myproject

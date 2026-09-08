@@ -17,7 +17,13 @@ def write(tmp_path: Path, content: str) -> Path:
 
 def test_loads_projects(config_file: Path) -> None:
     config = load_config(config_file)
-    assert [p.name for p in config.projects] == ["prod-myproject", "test-myproject", "labelled"]
+    assert [p.name for p in (config.projects)] == [
+        "prod-myproject",
+        "test-myproject",
+        "labelled",
+        "restricted",
+        "sealed",
+    ]
     assert config.projects[0].description == "Production"
     assert config.projects[2].vault_id == "labelled"
 
@@ -123,3 +129,42 @@ def test_empty_passphrase_is_rejected(tmp_path: Path) -> None:
 
 def test_inline_passphrase_is_not_leaked_by_repr() -> None:
     assert "hunter2" not in repr(ProjectConfig(name="a", passphrase="hunter2"))
+
+
+class TestReencryptTargets:
+    """The allowlist limits where a project's secrets may be re-encrypted."""
+
+    def test_unset_by_default(self, tmp_path: Path) -> None:
+        path = write(tmp_path, "projects:\n  - name: a\n    passphrase: x\n")
+        assert load_config(path).projects[0].reencrypt_targets is None
+
+    def test_accepts_a_list_of_known_projects(self, tmp_path: Path) -> None:
+        path = write(
+            tmp_path,
+            "projects:\n"
+            "  - name: a\n    passphrase: x\n    reencrypt_targets: [b]\n"
+            "  - name: b\n    passphrase: y\n",
+        )
+        assert load_config(path).projects[0].reencrypt_targets == ["b"]
+
+    def test_empty_list_is_kept_distinct_from_unset(self, tmp_path: Path) -> None:
+        # `[]` forbids every target, which must not be confused with "no restriction".
+        path = write(
+            tmp_path, "projects:\n  - name: a\n    passphrase: x\n    reencrypt_targets: []\n"
+        )
+        assert load_config(path).projects[0].reencrypt_targets == []
+
+    def test_unknown_target_is_rejected(self, tmp_path: Path) -> None:
+        # A typo would silently forbid a flow the operator believes is allowed.
+        path = write(
+            tmp_path,
+            "projects:\n  - name: a\n    passphrase: x\n    reencrypt_targets: [typo]\n",
+        )
+        with pytest.raises(ConfigError, match="unknown project 'typo'"):
+            load_config(path)
+
+    def test_a_project_may_list_itself(self, tmp_path: Path) -> None:
+        path = write(
+            tmp_path, "projects:\n  - name: a\n    passphrase: x\n    reencrypt_targets: [a]\n"
+        )
+        assert load_config(path).projects[0].reencrypt_targets == ["a"]

@@ -19,9 +19,9 @@ from vaultr.app import create_app
 from vaultr.config import load_config
 from vaultr.mcp_server import build_mcp_server
 from vaultr.settings import Settings
-from vaultr.vault import VaultService
+from vaultr.vault import VaultService, max_vault_text_length
 
-from .conftest import PROD_PASSPHRASE
+from .conftest import PROD_PASSPHRASE, TEST_PASSPHRASE
 
 MAX_SECRET_LENGTH = 128
 
@@ -60,10 +60,11 @@ def text_of(result) -> str:
 
 
 class TestToolSurface:
-    def test_exposes_exactly_the_two_tools(self, server) -> None:
+    def test_exposes_exactly_the_expected_tools(self, server) -> None:
         assert sorted(t.name for t in list_tools(server)) == [
             "encrypt_secret",
             "list_vault_projects",
+            "reencrypt_secret",
         ]
 
     def test_no_decrypt_tool_is_exposed(self, server) -> None:
@@ -96,7 +97,7 @@ class TestListProjects:
     def test_returns_the_configured_projects(self, server) -> None:
         result = call(server, "list_vault_projects")
         names = [p["name"] for p in result.structured_content["projects"]]
-        assert names == ["prod-myproject", "test-myproject", "labelled"]
+        assert names == ["prod-myproject", "test-myproject", "labelled", "restricted", "sealed"]
 
     def test_never_returns_a_passphrase(self, server) -> None:
         assert PROD_PASSPHRASE not in str(call(server, "list_vault_projects").structured_content)
@@ -193,3 +194,256 @@ class TestMounting:
         settings = Settings(config_file=config_file, mcp_enabled=False, _env_file=None)
         with TestClient(create_app(settings)) as client:
             assert client.post("/mcp/", json={}).status_code == 404
+
+
+class TestReencryptTool:
+    """`reencrypt_secret` moves a secret between project passphrases."""
+
+    def encrypted_for(self, server, project: str, secret: str = "hunter2") -> str:
+        result = call(server, "encrypt_secret", {"project": project, "secret": secret})
+        return result.structured_content["vault_text"]
+
+    def test_is_exposed(self, server) -> None:
+        assert "reencrypt_secret" in [t.name for t in list_tools(server)]
+
+    def test_declares_its_arguments(self, server) -> None:
+        tool = next(t for t in list_tools(server) if t.name == "reencrypt_secret")
+        assert set(tool.input_schema["properties"]) == {
+            "source_project",
+            "target_project",
+            "vault_text",
+            "variable_name",
+        }
+        assert tool.input_schema["required"] == ["source_project", "target_project", "vault_text"]
+
+    def test_is_annotated_as_non_destructive_and_closed_world(self, server) -> None:
+        tool = next(t for t in list_tools(server) if t.name == "reencrypt_secret")
+        assert tool.annotations.destructive_hint is False
+        assert tool.annotations.open_world_hint is False
+        # Salted, so the same input yields a different vault string each call.
+        assert tool.annotations.idempotent_hint is False
+
+    def test_moves_a_secret_between_projects(self, server) -> None:
+        original = self.encrypted_for(server, "test-myproject")
+        result = call(
+            server,
+            "reencrypt_secret",
+            {
+                "source_project": "test-myproject",
+                "target_project": "prod-myproject",
+                "vault_text": original,
+            },
+        )
+        assert result.is_error is False
+        body = result.structured_content
+        assert body["source_project"] == "test-myproject"
+        assert body["target_project"] == "prod-myproject"
+        assert decrypt(body["vault_text"], PROD_PASSPHRASE) == "hunter2"
+
+    def test_never_returns_the_plaintext(self, server) -> None:
+        original = self.encrypted_for(server, "test-myproject", "top-secret-value")
+        result = call(
+            server,
+            "reencrypt_secret",
+            {
+                "source_project": "test-myproject",
+                "target_project": "prod-myproject",
+                "vault_text": original,
+            },
+        )
+        assert "top-secret-value" not in str(result.structured_content)
+        assert "top-secret-value" not in text_of(result)
+
+    def test_accepts_a_pasted_yaml_snippet(self, server) -> None:
+        encrypted = call(
+            server,
+            "encrypt_secret",
+            {"project": "test-myproject", "secret": "hunter2", "variable_name": "db_pw"},
+        ).structured_content
+        result = call(
+            server,
+            "reencrypt_secret",
+            {
+                "source_project": "test-myproject",
+                "target_project": "prod-myproject",
+                "vault_text": encrypted["yaml_snippet"],
+            },
+        )
+        assert decrypt(result.structured_content["vault_text"], PROD_PASSPHRASE) == "hunter2"
+
+    def test_variable_name_yields_a_snippet(self, server) -> None:
+        original = self.encrypted_for(server, "test-myproject")
+        result = call(
+            server,
+            "reencrypt_secret",
+            {
+                "source_project": "test-myproject",
+                "target_project": "prod-myproject",
+                "vault_text": original,
+                "variable_name": "db_password",
+            },
+        )
+        assert result.structured_content["yaml_snippet"].startswith("db_password: !vault |")
+
+    def test_reports_the_target_vault_id(self, server) -> None:
+        original = self.encrypted_for(server, "prod-myproject")
+        result = call(
+            server,
+            "reencrypt_secret",
+            {
+                "source_project": "prod-myproject",
+                "target_project": "labelled",
+                "vault_text": original,
+            },
+        )
+        assert result.structured_content["vault_id"] == "labelled"
+
+    def test_policy_is_visible_to_the_agent(self, server) -> None:
+        # The agent needs to see where it may move a secret before it tries.
+        projects = call(server, "list_vault_projects").structured_content["projects"]
+        by_name = {p["name"]: p["reencrypt_targets"] for p in projects}
+        assert by_name["prod-myproject"] is None
+        assert by_name["restricted"] == ["test-myproject"]
+        assert by_name["sealed"] == []
+
+
+class TestReencryptToolErrors:
+    """Every refusal must tell the agent enough to correct itself."""
+
+    def encrypted_for(self, server, project: str) -> str:
+        return call(
+            server, "encrypt_secret", {"project": project, "secret": "hunter2"}
+        ).structured_content["vault_text"]
+
+    def test_wrong_source_project(self, server) -> None:
+        original = self.encrypted_for(server, "prod-myproject")
+        result = call(
+            server,
+            "reencrypt_secret",
+            {
+                "source_project": "test-myproject",
+                "target_project": "prod-myproject",
+                "vault_text": original,
+            },
+        )
+        assert result.is_error is True
+        assert "source_project" in text_of(result)
+
+    def test_not_vault_text(self, server) -> None:
+        result = call(
+            server,
+            "reencrypt_secret",
+            {
+                "source_project": "test-myproject",
+                "target_project": "prod-myproject",
+                "vault_text": "plain text",
+            },
+        )
+        assert result.is_error is True
+        assert "not an Ansible Vault string" in text_of(result)
+
+    def test_forbidden_target_names_the_setting(self, server) -> None:
+        original = self.encrypted_for(server, "restricted")
+        result = call(
+            server,
+            "reencrypt_secret",
+            {
+                "source_project": "restricted",
+                "target_project": "prod-myproject",
+                "vault_text": original,
+            },
+        )
+        assert result.is_error is True
+        assert "not allowed" in text_of(result)
+        assert "reencrypt_targets" in text_of(result)
+
+    def test_unknown_project_lists_the_valid_ones(self, server) -> None:
+        original = self.encrypted_for(server, "test-myproject")
+        result = call(
+            server,
+            "reencrypt_secret",
+            {"source_project": "nope", "target_project": "prod-myproject", "vault_text": original},
+        )
+        assert result.is_error is True
+        assert "prod-myproject" in text_of(result)
+
+    def test_empty_vault_text(self, server) -> None:
+        result = call(
+            server,
+            "reencrypt_secret",
+            {
+                "source_project": "test-myproject",
+                "target_project": "prod-myproject",
+                "vault_text": "",
+            },
+        )
+        assert result.is_error is True
+        assert "must not be empty" in text_of(result)
+
+    def test_oversized_input(self, server) -> None:
+        result = call(
+            server,
+            "reencrypt_secret",
+            {
+                "source_project": "test-myproject",
+                "target_project": "prod-myproject",
+                "vault_text": "x" * (max_vault_text_length(MAX_SECRET_LENGTH) + 1),
+            },
+        )
+        assert result.is_error is True
+        assert "exceeds the maximum" in text_of(result)
+
+    def test_invalid_variable_name(self, server) -> None:
+        original = self.encrypted_for(server, "test-myproject")
+        result = call(
+            server,
+            "reencrypt_secret",
+            {
+                "source_project": "test-myproject",
+                "target_project": "prod-myproject",
+                "vault_text": original,
+                "variable_name": "bad name",
+            },
+        )
+        assert result.is_error is True
+        assert "not a valid Ansible variable name" in text_of(result)
+
+    def test_a_failure_never_leaks_a_passphrase(self, server) -> None:
+        result = call(
+            server,
+            "reencrypt_secret",
+            {"source_project": "nope", "target_project": "prod-myproject", "vault_text": "x"},
+        )
+        assert PROD_PASSPHRASE not in text_of(result)
+        assert TEST_PASSPHRASE not in text_of(result)
+
+
+class TestReencryptToolDisabled:
+    """A disabled instance must not advertise a tool that would always fail."""
+
+    @pytest.fixture
+    def disabled_server(self, config_file: Path):
+        vault = VaultService.from_config(load_config(config_file))
+        return build_mcp_server(
+            lambda: vault, max_secret_length=MAX_SECRET_LENGTH, reencrypt_enabled=False
+        )
+
+    def test_tool_is_absent(self, disabled_server) -> None:
+        assert [t.name for t in list_tools(disabled_server)] == [
+            "list_vault_projects",
+            "encrypt_secret",
+        ]
+
+    def test_calling_it_fails(self, disabled_server) -> None:
+        result = call(
+            disabled_server,
+            "reencrypt_secret",
+            {"source_project": "a", "target_project": "b", "vault_text": "x"},
+        )
+        assert result.is_error is True
+
+    def test_encryption_still_works(self, disabled_server) -> None:
+        result = call(
+            disabled_server, "encrypt_secret", {"project": "prod-myproject", "secret": "hunter2"}
+        )
+        assert result.is_error is False

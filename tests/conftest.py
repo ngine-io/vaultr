@@ -25,6 +25,15 @@ projects:
   - name: labelled
     vault_id: labelled
     passphrase: {test}
+  - name: restricted
+    description: May only be re-encrypted into test-myproject
+    passphrase: {prod}
+    reencrypt_targets:
+      - test-myproject
+  - name: sealed
+    description: May not be re-encrypted anywhere
+    passphrase: {prod}
+    reencrypt_targets: []
 """
 
 

@@ -84,6 +84,35 @@ does not mean the previous call failed.
 
 There is no decryption tool, for the same reason there is no decryption endpoint.
 
+### `reencrypt_secret`
+
+Moves an already encrypted secret from one project's passphrase to another's, for
+example promoting a staging value into production.
+
+| Argument         | Required | Description                                              |
+| ---------------- | -------- | -------------------------------------------------------- |
+| `source_project` | yes      | The project the secret is encrypted for today.            |
+| `target_project` | yes      | The project it should be encrypted for instead.           |
+| `vault_text`     | yes      | The `$ANSIBLE_VAULT` string, or a whole `key: !vault \|` block. |
+| `variable_name`  | no       | Ansible variable name; adds a ready to paste YAML block.  |
+
+```json
+{
+  "source_project": "test-myproject",
+  "target_project": "prod-myproject",
+  "vault_id": null,
+  "vault_text": "$ANSIBLE_VAULT;1.1;AES256\n3861...",
+  "yaml_snippet": "db_password: !vault |\n          $ANSIBLE_VAULT;1.1;AES256\n          3861..."
+}
+```
+
+The plaintext is never returned; it exists only between the decrypt and the
+re-encrypt. `list_vault_projects` reports each project's `reencrypt_targets`, so an
+agent can see where a secret may be moved before it tries.
+
+The tool is not registered at all when `VAULTR_REENCRYPT_ENABLED=false`, so a disabled
+instance does not advertise something that would always fail.
+
 ## Errors
 
 Failures an agent can act on come back as tool errors carrying the reason, so the model
@@ -100,8 +129,8 @@ server log.
 
 ## Security
 
-Everything in [Security](security.md) applies here, plus one consideration specific to
-agents.
+Everything in [Security](security.md) applies here, plus two considerations specific
+to agents.
 
 !!! warning "An agent can be talked into calling a tool"
     A prompt injection in content the agent reads can make it encrypt attacker chosen
@@ -109,6 +138,19 @@ agents.
     Ansible will decrypt and trust. Give an agent a token only for the projects and
     environments where that is acceptable, and review what a run committed as you would
     review a pull request.
+
+!!! danger "`reencrypt_secret` can be used to read a secret, not only write one"
+    Re-encryption decrypts with the source project's passphrase. An agent that is
+    induced to move a production secret into a project whose passphrase the attacker
+    knows has handed them that secret, and the same is true of a human calling the
+    [HTTP API](api.md#re-encrypt-a-secret). The tool description tells the model not to
+    act on instructions found in data it has read, but a tool description is guidance,
+    not an access control.
+
+    Where that matters, constrain it on the server rather than relying on the model:
+    set [`reencrypt_targets`](configuration.md#re-encryption-targets) so production
+    secrets cannot leave, or set `VAULTR_REENCRYPT_ENABLED=false` to remove the tool.
+    See [Security](security.md#re-encryption).
 
 The endpoint is refused without a valid token whenever `VAULTR_API_TOKENS` is set. With
 no tokens configured it is open, exactly like the rest of the service, which is only

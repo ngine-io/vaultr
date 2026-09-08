@@ -34,6 +34,8 @@ The submitted plaintext is never logged, and the UI does not echo it back into t
 form, keeping it out of the browser's page cache and back button.
 
 **No decryption.** There is no endpoint that turns a vault string back into plaintext.
+Re-encryption decrypts internally but never returns the plaintext; see
+[Re-encryption](#re-encryption) for what that does and does not protect.
 
 **Fail closed at startup.** The configuration and every passphrase are resolved before
 the first request. A missing environment variable or an unreadable secret file stops
@@ -65,6 +67,59 @@ are served locally; no CDN is involved.
 - **Restrict who can reach it.** Network policy, VPN or an authenticating proxy.
 - **Rotate deliberately.** Passphrases are read once at startup; rotating one means
   restarting the service and re-encrypting the values that used it.
+
+## Re-encryption
+
+[Re-encryption](api.md#re-encrypt-a-secret) moves an encrypted secret from one
+project's passphrase to another's. It is the one place where Vaultr decrypts, so it
+deserves its own analysis.
+
+The plaintext never leaves the process. It exists only between the decrypt and the
+re-encrypt call, is never returned, logged or stored, and the result is sent with
+`Cache-Control: no-store`.
+
+!!! danger "It is a decryption oracle for anyone who holds a target passphrase"
+    Re-encrypting a secret out of a project you cannot read, into a project whose
+    passphrase you *do* know, and then decrypting the result with `ansible-vault`,
+    recovers the original secret.
+
+    This is inherent to the feature, not a flaw in the implementation. It means the
+    ability to re-encrypt out of a project is equivalent to the ability to read that
+    project's secrets, for anyone who legitimately holds any other project's
+    passphrase, such as a developer who knows the staging passphrase.
+
+Re-encryption is offered over the web UI, the [HTTP API](api.md#re-encrypt-a-secret)
+and as the [`reencrypt_secret` MCP tool](mcp.md#reencrypt_secret). The MCP surface
+widens the exposure: an agent can be steered by a prompt injection in content it reads,
+so if agents have a token, prefer constraining the flows below rather than relying on
+the tool description.
+
+Three controls are available, in order of bluntness:
+
+1. **Turn it off.** `VAULTR_REENCRYPT_ENABLED=false` removes the API endpoint, the UI
+   page and the MCP tool entirely.
+2. **Restrict the direction.** `reencrypt_targets` on a project lists the only
+   projects its secrets may be moved into. An empty list forbids all of them.
+   Promotion usually flows one way, so allowing staging into production while
+   forbidding the reverse matches how most teams work:
+
+    ```yaml
+    projects:
+      - name: prod-myproject
+        passphrase_env: VAULTR_PASSPHRASE_PROD
+        reencrypt_targets: []          # nothing may leave production
+
+      - name: test-myproject
+        passphrase_env: VAULTR_PASSPHRASE_TEST
+        reencrypt_targets:
+          - prod-myproject             # staging may be promoted into production
+    ```
+
+3. **Restrict who can reach it**, with `VAULTR_API_TOKENS` or an authenticating proxy,
+   as for everything else.
+
+The allowlist is checked before anything is decrypted, so a refused combination does
+not reveal whether the input was even a valid secret.
 
 ## Cryptography
 

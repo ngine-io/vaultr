@@ -37,6 +37,14 @@ class ProjectConfig(BaseModel):
     vault_id: VaultId | None = None
     """Optional Ansible vault ID. Set it to emit a 1.2 header labelled with that ID."""
 
+    reencrypt_targets: list[ProjectName] | None = None
+    """Projects this project's secrets may be re-encrypted into.
+
+    Re-encryption decrypts with this project's passphrase, so a caller who knows the
+    target project's passphrase learns this project's secret. Leave unset to allow any
+    target; set an explicit list, or an empty list, to restrict or forbid it.
+    """
+
     passphrase: SecretStr | None = None
     passphrase_env: str | None = None
     passphrase_file: Path | None = None
@@ -111,6 +119,19 @@ class VaultrConfig(BaseModel):
             if project.name in seen:
                 raise ValueError(f"duplicate project name {project.name!r}")
             seen.add(project.name)
+        return self
+
+    @model_validator(mode="after")
+    def _reencrypt_targets_exist(self) -> VaultrConfig:
+        """A typo in the allowlist would silently forbid a flow that looks allowed."""
+        names = {project.name for project in self.projects}
+        for project in self.projects:
+            for target in project.reencrypt_targets or []:
+                if target not in names:
+                    raise ValueError(
+                        f"project {project.name!r}: reencrypt_targets references "
+                        f"unknown project {target!r}"
+                    )
         return self
 
 

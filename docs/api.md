@@ -120,8 +120,74 @@ Errors carry a `detail` string:
     print(response.json()["yaml_snippet"])
     ```
 
+## Re-encrypt a secret
+
+```
+POST /api/v1/reencrypt
+```
+
+Moves an already encrypted secret from one project's passphrase to another's. Vaultr
+decrypts it with the source project's passphrase and immediately re-encrypts it with
+the target's; the plaintext is never returned.
+
+| Field            | Type   | Required | Description                                              |
+| ---------------- | ------ | -------- | -------------------------------------------------------- |
+| `source_project` | string | yes      | The project the secret is currently encrypted for.        |
+| `target_project` | string | yes      | The project to encrypt it for instead.                    |
+| `vault_text`     | string | yes      | The `$ANSIBLE_VAULT` string, or a whole `key: !vault \|` block. |
+| `variable_name`  | string | no       | Ansible variable name; adds `yaml_snippet` to the reply.  |
+
+```bash
+curl -s localhost:8000/api/v1/reencrypt \
+  -H 'Content-Type: application/json' \
+  -d @- <<'JSON'
+{
+  "source_project": "test-myproject",
+  "target_project": "prod-myproject",
+  "vault_text": "$ANSIBLE_VAULT;1.1;AES256\n64303339...",
+  "variable_name": "db_password"
+}
+JSON
+```
+
+```json
+{
+  "source_project": "test-myproject",
+  "target_project": "prod-myproject",
+  "vault_id": null,
+  "vault_text": "$ANSIBLE_VAULT;1.1;AES256\n3861...",
+  "yaml_snippet": "db_password: !vault |\n          $ANSIBLE_VAULT;1.1;AES256\n          3861..."
+}
+```
+
+!!! tip "Paste the snippet as it is"
+    `vault_text` accepts the whole `key: !vault |` block that Vaultr and
+    `ansible-vault encrypt_string` produce. The ten space indentation, which Ansible
+    itself rejects, is stripped for you, as are blank lines and `\r\n` line endings.
+
+The content is re-encrypted byte for byte, so a value that is not valid UTF-8, such as
+a binary key, survives unchanged.
+
+### Errors
+
+| Status | Meaning                                                                    |
+| ------ | -------------------------------------------------------------------------- |
+| `401`  | Missing or invalid bearer token.                                            |
+| `403`  | Re-encryption is disabled, or the configuration forbids this pair.          |
+| `404`  | Unknown source or target project.                                           |
+| `413`  | Input larger than `VAULTR_MAX_SECRET_LENGTH`.                               |
+| `422`  | Not a vault string, or it does not belong to `source_project`.              |
+
+!!! danger "Re-encryption is a privileged operation"
+    Anyone who can re-encrypt out of a project and knows the target project's
+    passphrase can read that project's secrets. See
+    [Security](security.md#re-encryption) before enabling it broadly.
+
 ## No decrypt endpoint
 
 There is none, by design. Vaultr exists so that people who must not know a vault
 passphrase can still produce encrypted values; giving them decryption back would undo
 exactly that. Decrypt with `ansible-vault` where the passphrase legitimately lives.
+
+Re-encryption decrypts internally, but the plaintext never leaves the process: it
+exists only between the decrypt and the re-encrypt call.

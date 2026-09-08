@@ -41,6 +41,13 @@ class Settings(BaseSettings):
     mcp_enabled: bool = True
     """Serve the MCP endpoint at ``/mcp`` for agent clients."""
 
+    reencrypt_enabled: bool = True
+    """Offer re-encryption between projects.
+
+    Re-encryption decrypts with the source project's passphrase. Turn it off entirely
+    where no one should be able to move a secret between projects.
+    """
+
     @field_validator("api_tokens", mode="before")
     @classmethod
     def _split_tokens(cls, value: object) -> object:

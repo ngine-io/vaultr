@@ -79,7 +79,11 @@ jobs:
           test "$(curl -s -o /dev/null -w '%{http_code}' -X POST localhost:8000/mcp/ \
             -H 'Content-Type: application/json' -d '{}')" = 401
 
-      - name: Verify the encrypted value decrypts with Ansible
+          # The re-encryption UI is served and linked from the navbar.
+          curl -sf -H "$auth" localhost:8000/reencrypt | grep -q 'id="source_project"'
+          curl -sf -H "$auth" localhost:8000/ | grep -q 'href="/reencrypt"'
+
+      - name: Verify encryption and re-encryption with Ansible
         run: |
           set -euo pipefail
           pip install --quiet ansible-core
@@ -87,10 +91,30 @@ jobs:
           import json
           from ansible.parsing.vault import VaultLib, VaultSecret
 
+          import urllib.request
+
           vault_text = json.load(open("/tmp/out.json"))["vault_text"]
           lib = VaultLib(secrets=[("default", VaultSecret(b"smoke-test-passphrase"))])
           assert lib.decrypt(vault_text.encode()).decode() == "s3cr3t"
           print("round trip ok")
+
+          # Re-encrypt back onto the same project and decrypt again: this exercises the
+          # decrypt-then-encrypt path, which no other smoke assertion covers.
+          body = json.dumps({
+              "source_project": "example",
+              "target_project": "example",
+              "vault_text": vault_text,
+          }).encode()
+          request = urllib.request.Request(
+              "http://localhost:8000/api/v1/reencrypt",
+              data=body,
+              headers={"Content-Type": "application/json",
+                       "Authorization": "Bearer smoke-token"},
+          )
+          moved = json.load(urllib.request.urlopen(request))["vault_text"]
+          assert moved != vault_text, "re-encryption must re-salt"
+          assert lib.decrypt(moved.encode()).decode() == "s3cr3t"
+          print("re-encrypt round trip ok")
           EOF
 
       # Drives the mounted server with a real MCP client over streamable HTTP, which
@@ -109,7 +133,7 @@ jobs:
               http = httpx2.AsyncClient(headers={"Authorization": "Bearer smoke-token"})
               async with Client(streamable_http_client("http://localhost:8000/mcp/", http_client=http)) as client:
                   names = sorted(t.name for t in (await client.list_tools()).tools)
-                  assert names == ["encrypt_secret", "list_vault_projects"], names
+                  assert names == ["encrypt_secret", "list_vault_projects", "reencrypt_secret"], names
 
                   result = await client.call_tool(
                       "encrypt_secret", {"project": "example", "secret": "via-mcp"}
@@ -117,9 +141,19 @@ jobs:
                   assert not result.is_error, result.content
                   vault_text = result.structured_content["vault_text"]
 
+                  moved = await client.call_tool(
+                      "reencrypt_secret",
+                      {"source_project": "example", "target_project": "example",
+                       "vault_text": vault_text},
+                  )
+                  assert not moved.is_error, moved.content
+                  moved_text = moved.structured_content["vault_text"]
+                  assert moved_text != vault_text, "re-encryption must re-salt"
+
               await http.aclose()
               lib = VaultLib(secrets=[("default", VaultSecret(b"smoke-test-passphrase"))])
               assert lib.decrypt(vault_text.encode()).decode() == "via-mcp"
+              assert lib.decrypt(moved_text.encode()).decode() == "via-mcp"
               print("mcp round trip ok")
 
           anyio.run(main)

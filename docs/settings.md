@@ -15,6 +15,7 @@ local development; see `.env.example`.
 | `VAULTR_MAX_SECRET_LENGTH` | `65536`   | Largest accepted plaintext, in characters.                            |
 | `VAULTR_DOCS_ENABLED`   | `true`       | Serve the OpenAPI browser at `/api`.                                  |
 | `VAULTR_MCP_ENABLED`    | `true`       | Serve the [MCP endpoint](mcp.md) at `/mcp`.                           |
+| `VAULTR_REENCRYPT_ENABLED` | `true`    | Offer [re-encryption](security.md#re-encryption) on the UI, API and MCP. |
 
 The container image additionally sets `VAULTR_CONFIG_FILE=/app/config.yml`.
 

@@ -20,7 +20,16 @@
            href="{{ url_for('index').path }}">
           <span class="ms-2">{{ app_name }}</span>
         </a>
-
+        <ul class="navbar-nav flex-row">
+          <li class="nav-item">
+            <a class="nav-link" href="{{ url_for('index').path }}">Encrypt</a>
+          </li>
+          {% if reencrypt_enabled %}
+          <li class="nav-item">
+            <a class="nav-link" href="{{ url_for('reencrypt-form').path }}">Re-encrypt</a>
+          </li>
+          {% endif %}
+        </ul>
         <div class="navbar-nav flex-row order-md-last">
           <div class="nav-item">
             <a href="{{ url_for('index').path }}?theme=dark"

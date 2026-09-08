@@ -43,6 +43,21 @@ projects:
     passphrase_file: /run/secrets/test-passphrase
 ```
 
+## Re-encrypt between projects
+
+Promote an already encrypted secret from one project to another without seeing the
+plaintext:
+
+```bash
+curl -s localhost:8000/api/v1/reencrypt \
+  -H 'Content-Type: application/json' \
+  -d '{"source_project": "test-myproject", "target_project": "prod-myproject",
+       "vault_text": "$ANSIBLE_VAULT;1.1;AES256\n6430..."}'
+```
+
+Restrict where secrets may be moved with `reencrypt_targets`, or turn the feature off
+with `VAULTR_REENCRYPT_ENABLED=false`.
+
 ## MCP
 
 Agents can encrypt through the built-in [MCP server](https://ngine-io.github.io/vaultr/mcp/):
