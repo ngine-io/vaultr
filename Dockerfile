@@ -7,7 +7,7 @@ FROM docker.io/python:3.14.7-slim AS base
 # Asset stage: collect Tabler's prebuilt stylesheet and the vendored scripts.
 # Tabler ships compiled CSS, so nothing is compiled here and the templates are not
 # needed; npm only resolves and copies files.
-FROM docker.io/node:22-slim AS assets
+FROM docker.io/node:25-slim AS assets
 
 WORKDIR /build
 COPY package.json package-lock.json ./
