@@ -2,7 +2,7 @@
 # the venv built below can never be copied onto a different Python or glibc.
 # A named stage is used instead of an ARG because Dependabot does not resolve
 # ARG substitution in FROM and would stop updating the base image.
-FROM docker.io/python:3.14.7-slim AS base
+FROM docker.io/python:3.15.0rc3-slim AS base
 
 # Asset stage: collect Tabler's prebuilt stylesheet and the vendored scripts.
 # Tabler ships compiled CSS, so nothing is compiled here and the templates are not
