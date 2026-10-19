@@ -192,6 +192,13 @@ class TestStyling:
         for chunk in ("form-select", "form-control", "form-label", "btn btn-primary"):
             assert chunk in body
 
+    @pytest.mark.parametrize("path", ["/", "/reencrypt"])
+    def test_hints_use_form_text(self, client: TestClient, path: str) -> None:
+        # Tabler 1.6 deprecated .form-hint in favour of Bootstrap's .form-text.
+        body = client.get(path).text
+        assert 'class="form-text"' in body
+        assert "form-hint" not in body
+
     def test_labels_are_bound_to_their_inputs(self, client: TestClient) -> None:
         # Tabler styles labels, but only a for/id pair makes them clickable.
         body = client.get("/").text

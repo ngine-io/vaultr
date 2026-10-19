@@ -45,7 +45,7 @@
               </option>
               {% endfor %}
             </select>
-            <small class="form-hint">The project the secret is encrypted for today.</small>
+            <small class="form-text">The project the secret is encrypted for today.</small>
           </div>
 
           <div class="col-md-6 mb-3">
@@ -61,7 +61,7 @@
               </option>
               {% endfor %}
             </select>
-            <small class="form-hint">The project it should be encrypted for instead.</small>
+            <small class="form-text">The project it should be encrypted for instead.</small>
           </div>
         </div>
 
@@ -70,7 +70,7 @@
           <textarea class="form-control font-monospace vault-output" id="vault_text"
                     name="vault_text" rows="8" required autocomplete="off" spellcheck="false"
                     placeholder="$ANSIBLE_VAULT;1.1;AES256&#10;6430..."></textarea>
-          <small class="form-hint">
+          <small class="form-text">
             Paste the <code>$ANSIBLE_VAULT</code> block, or the whole
             <code>key: !vault |</code> snippet. Indentation is handled for you.
           </small>
@@ -81,7 +81,7 @@
           <input class="form-control font-monospace" type="text" id="variable_name"
                  name="variable_name" value="{{ variable_name or '' }}"
                  autocomplete="off" spellcheck="false" placeholder="db_password">
-          <small class="form-hint">
+          <small class="form-text">
             Optional. Also returns a ready to paste <code>key: !vault |</code> YAML block.
           </small>
         </div>

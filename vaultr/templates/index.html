@@ -48,7 +48,7 @@
           <textarea class="form-control font-monospace" id="secret" name="secret" rows="6"
                     required autocomplete="off" spellcheck="false"
                     placeholder="Value to encrypt"></textarea>
-          <small class="form-hint">
+          <small class="form-text">
             Line endings are normalised and the trailing newline is removed.
           </small>
         </div>
@@ -58,7 +58,7 @@
           <input class="form-control font-monospace" type="text" id="variable_name"
                  name="variable_name" value="{{ variable_name or '' }}"
                  autocomplete="off" spellcheck="false" placeholder="db_password">
-          <small class="form-hint">
+          <small class="form-text">
             Optional. Also returns a ready to paste <code>key: !vault |</code> YAML block.
           </small>
         </div>
