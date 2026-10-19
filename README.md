@@ -1,7 +1,7 @@
 # Vaultr
 
 [![Python tests](https://github.com/ngine-io/vaultr/actions/workflows/tests.yml/badge.svg)](https://github.com/ngine-io/vaultr/actions/workflows/tests.yml)
-![python versions](https://img.shields.io/badge/python-3.11%20%7C%203.12%20%7C%203.13%20%7C%203.14%20%7C%203.15-blue.svg)
+![python versions](https://img.shields.io/badge/python-3.11%20%7C%203.12%20%7C%203.13%20%7C%203.14-blue.svg)
 
 Encrypt secrets into [Ansible Vault](https://docs.ansible.com/ansible/latest/vault_guide/)
 strings through a web UI, a JSON API or MCP, without ever handing out the vault

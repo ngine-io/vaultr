@@ -63,7 +63,7 @@ Supported versions are listed in several places that must stay in sync:
 - `PYTHON_VERSIONS` in the Makefile
 - the version badge in the README
 
-ansible-core sets the real upper bound: the 2.21.x releases fail on import under Python 3.15, which needs 2.22.
+ansible-core sets the real upper bound: the 2.21.x releases fail on import under Python 3.15, which needs 2.22. Until 2.22 is locked, 3.15 is held back everywhere: the `matrix` job in `tests.yml` adds it automatically once `uv.lock` carries ansible-core 2.22 or newer, and the classifier, README badge and `PYTHON_VERSIONS` should be updated in the same PR.
 
 ## Releasing
 
