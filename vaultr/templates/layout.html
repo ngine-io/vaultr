@@ -4,6 +4,8 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="robots" content="noindex, nofollow">
+  {# htmx 4 swaps error responses into the target; the 401 and 404 bodies are JSON. #}
+  <meta name="htmx-config" content='{"noSwap": [204, 304, "4xx", "5xx"]}'>
   <title>{% block title %}{{ app_name }}{% endblock %}</title>
   <link rel="stylesheet" href="{{ url_for('static', path='/css/tabler.min.css').path }}">
   <link rel="stylesheet" href="{{ url_for('static', path='/css/custom.css').path }}">
