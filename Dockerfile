@@ -39,8 +39,12 @@ FROM base
 # writable Ansible home. Without HOME set it falls back to the working directory,
 # which the unprivileged user cannot write to. Group 0 with g+rwX keeps this working
 # under runtimes that assign an arbitrary UID, such as OpenShift.
+# Ansible also calls getpass.getuser() on import, and the UID has no passwd entry,
+# so the username must come from the environment.
 ENV PATH="/opt/vaultr/bin:$PATH" \
     HOME=/home/vaultr \
+    USER=vaultr \
+    LOGNAME=vaultr \
     ANSIBLE_HOME=/home/vaultr/.ansible \
     VAULTR_CONFIG_FILE=/app/config.yml
 
