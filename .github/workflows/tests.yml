@@ -3,18 +3,44 @@ name: Python tests
 on: [push, pull_request]
 
 jobs:
+  matrix:
+    runs-on: ubuntu-latest
+    outputs:
+      python-versions: ${{ steps.versions.outputs.python-versions }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      # ansible-core before 2.22 fails on import under Python 3.15, and the tests
+      # install the locked set, so 3.15 only runs once uv.lock carries 2.22 or newer.
+      - name: Select Python versions
+        id: versions
+        shell: python
+        run: |
+          import json, os, tomllib
+
+          with open("uv.lock", "rb") as f:
+              lock = tomllib.load(f)
+          locked = [
+              tuple(int(part) for part in pkg["version"].split(".")[:2])
+              for pkg in lock["package"]
+              if pkg["name"] == "ansible-core"
+          ]
+          versions = ["3.11", "3.12", "3.13", "3.14"]
+          if any(v >= (2, 22) for v in locked):
+              versions.append("3.15")
+          print(f"Locked ansible-core: {locked}, testing on {versions}")
+          with open(os.environ["GITHUB_OUTPUT"], "a") as out:
+              out.write(f"python-versions={json.dumps(versions)}\n")
+
   test:
+    needs: matrix
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       max-parallel: 4
       matrix:
-        python-version:
-          - "3.11"
-          - "3.12"
-          - "3.13"
-          - "3.14"
-          - "3.15"
+        python-version: ${{ fromJSON(needs.matrix.outputs.python-versions) }}
     steps:
       - uses: actions/checkout@v7
       - name: Install uv
