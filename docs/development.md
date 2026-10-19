@@ -93,10 +93,12 @@ compatibility instead of an implementation detail.
 
 Version lives in `vaultr/version.py`.
 
-1. Bump it and update the changelog.
-2. Tag the commit `vX.Y.Z` and push the tag.
+1. Bump it, and draft the release notes as an unpublished GitHub release for `vX.Y.Z`.
+   There is no changelog file; the GitHub releases are the changelog.
+2. Tag the merged commit `vX.Y.Z` and push the tag.
 3. CI builds and pushes `ghcr.io/ngine-io/vaultr:X.Y.Z` and `:X.Y`.
-4. `make release` publishes to PyPI.
+4. Publish the drafted GitHub release on that tag.
+5. `make release` publishes to PyPI.
 
 ## Documentation
 
