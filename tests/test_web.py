@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import re
 from collections.abc import Iterator
 from pathlib import Path
@@ -258,6 +259,25 @@ class TestThemeSwitch:
         # A relative ?theme= on the /encrypt result page would GET a POST-only route.
         response = client.post("/encrypt", data={"project": "prod-myproject", "secret": "x"})
         assert 'href="/?theme=dark"' in response.text
+
+
+class TestHtmx:
+    """Markup that depends on htmx 4 semantics."""
+
+    @pytest.mark.parametrize("path", ["/", "/reencrypt"])
+    def test_submit_is_disabled_during_the_request(self, client: TestClient, path: str) -> None:
+        # htmx 4 renamed hx-disabled-elt to hx-disable; the old name is silently ignored.
+        body = client.get(path).text
+        assert "hx-disable=\"find button[type='submit']\"" in body
+        assert "hx-disabled-elt" not in body
+
+    def test_error_responses_are_not_swapped(self, client: TestClient) -> None:
+        # htmx 4 swaps 4xx and 5xx by default, which would paint the JSON body of a
+        # 401 or 404 into the result card.
+        body = client.get("/").text
+        meta = re.search(r"<meta name=\"htmx-config\" content='([^']*)'>", body)
+        assert meta is not None
+        assert json.loads(meta.group(1))["noSwap"] == [204, 304, "4xx", "5xx"]
 
 
 class TestReencryptPage:
