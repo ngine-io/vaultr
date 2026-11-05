@@ -50,6 +50,8 @@ Fixtures in `tests/conftest.py` write a temporary `config.yml` with five project
 
 - The Lint, Python tests, Frontend assets and Docs workflows run on every push and pull request.
 - `container.yml` runs only on pushes to `main` and `v*` tags. It builds the image and smoke-tests it: HTTP checks, a round trip through real Ansible, and a real MCP client. A container regression therefore only shows up after merge. Pushes to `main` also publish the docs to GitHub Pages.
+- `dependabot-automerge.yml` enables auto-merge (squash) on Dependabot PRs that are a semver patch or minor update, except for the `docker` ecosystem: a minor bump of the `python` base image is a new Python version, which ansible-core may not support yet. Major and docker updates still need a human. A ruleset on `main` requires the `ruff`, `test (3.x)`, `assets` and `docs` checks before a merge (repository admins can bypass it to push releases), so rename a job or change the Python matrix together with that ruleset.
+- A merge done with `GITHUB_TOKEN` does not trigger other workflows, so an auto-merged PR does not run `container.yml` or publish the docs. That happens on the next human push to `main`.
 - The runtime image runs as UID 1000 with group 0 and no passwd entry, so it works when the runtime assigns an arbitrary UID (OpenShift). It sets `HOME`, `ANSIBLE_HOME`, `USER` and `LOGNAME` because ansible-core needs them at import time; `getpass.getuser()` crashes without them.
 - Rootless podman injects a passwd entry for the container user, which hides that class of bug. To reproduce what CI sees, run with `podman run --passwd=false --user 4321:0 ...`.
 - The Dockerfile uses a named `base` stage rather than an `ARG` for the Python image, so Dependabot can keep updating it.
