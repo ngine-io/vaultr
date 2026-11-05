@@ -10,6 +10,7 @@ from fastapi import FastAPI, Request, Response
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 from loguru import logger
+from starlette.types import ASGIApp, Receive, Scope, Send
 
 from vaultr.config import ConfigError, load_config, passphrase_environ
 from vaultr.logging import configure_logging
@@ -34,6 +35,25 @@ string without ever handling the vault passphrase yourself.
 Projects and their passphrases are defined server side. Pick a project, submit a
 secret, and receive the encrypted string. Decryption is intentionally not offered.
 """
+
+
+class RootPathMiddleware:
+    """Set the ASGI ``root_path`` to ``VAULTR_ROOT_PATH`` on every request.
+
+    This is what ``FastAPI(root_path=...)`` did before FastAPI deprecated it in favour
+    of the server's own option. Doing it here keeps ``VAULTR_ROOT_PATH`` working
+    however the app is started: the console script, ``uvicorn vaultr.app:app`` or the
+    container.
+    """
+
+    def __init__(self, app: ASGIApp, root_path: str) -> None:
+        self.app = app
+        self.root_path = root_path
+
+    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
+        if scope["type"] in ("http", "websocket"):
+            scope["root_path"] = self.root_path
+        await self.app(scope, receive, send)
 
 
 @asynccontextmanager
@@ -83,7 +103,6 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         description=DESCRIPTION,
         version=__version__,
         lifespan=lifespan,
-        root_path=settings.root_path,
         # FastAPI's own docs page loads Swagger UI from a CDN, which the Content
         # Security Policy blocks; routes/docs.py serves it from /static instead.
         docs_url=None,
@@ -166,6 +185,11 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             "base-uri 'none'",
         )
         return response
+
+    # Added last so it is the outermost middleware and sets the root path before
+    # anything reads it.
+    if settings.root_path:
+        app.add_middleware(RootPathMiddleware, root_path=settings.root_path)
 
     return app
 
