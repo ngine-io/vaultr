@@ -1,6 +1,6 @@
 {
   "name": "vaultr-assets",
-  "version": "1.1.1",
+  "version": "1.1.2",
   "private": true,
   "description": "Frontend assets for Vaultr: Tabler, htmx and Swagger UI.",
   "scripts": {
