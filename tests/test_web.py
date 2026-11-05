@@ -495,3 +495,21 @@ class TestReencryptDisabledInTheUI:
 
     def test_navbar_link_is_hidden(self, disabled_client: TestClient) -> None:
         assert 'href="/reencrypt"' not in disabled_client.get("/").text
+
+
+def test_root_path_prefixes_links_and_the_schema(config_file: Path) -> None:
+    """VAULTR_ROOT_PATH, for a proxy that serves Vaultr from a sub path and strips it.
+
+    FastAPI deprecated its own root_path parameter, and the suite turns that warning
+    into an error, so this also guards against going back to it.
+    """
+    settings = Settings(config_file=config_file, api_tokens=[], root_path="/vaultr", _env_file=None)
+    with TestClient(create_app(settings)) as client:
+        html = client.get("/").text
+        schema = client.get("/api/openapi.json").json()
+        health = client.get("/healthz")
+    assert 'href="/vaultr/static/css/tabler.min.css"' in html
+    assert re.search(r'action="/vaultr/encrypt"|hx-post="/vaultr/encrypt"', html)
+    assert schema["servers"] == [{"url": "/vaultr"}]
+    # The proxy strips the prefix, so the app still routes the bare path.
+    assert health.status_code == 200
