@@ -3,10 +3,12 @@
 from __future__ import annotations
 
 import os
+from collections.abc import Mapping
 from pathlib import Path
 from typing import Annotated
 
 import yaml
+from dotenv import dotenv_values
 from pydantic import BaseModel, ConfigDict, Field, SecretStr, StringConstraints, model_validator
 
 # Project names end up in URLs and in the UI, vault IDs end up in the vault header
@@ -68,8 +70,11 @@ class ProjectConfig(BaseModel):
             )
         return self
 
-    def resolve_passphrase(self) -> str:
+    def resolve_passphrase(self, environ: Mapping[str, str] | None = None) -> str:
         """Read the passphrase from its configured source.
+
+        ``environ`` is where ``passphrase_env`` is looked up; it defaults to the
+        process environment.
 
         Raises:
             ConfigError: if the environment variable or file is missing or empty.
@@ -78,7 +83,7 @@ class ProjectConfig(BaseModel):
             passphrase = self.passphrase.get_secret_value()
             origin = "passphrase"
         elif self.passphrase_env is not None:
-            value = os.environ.get(self.passphrase_env)
+            value = (os.environ if environ is None else environ).get(self.passphrase_env)
             if value is None:
                 raise ConfigError(
                     f"project {self.name!r}: environment variable "
@@ -133,6 +138,21 @@ class VaultrConfig(BaseModel):
                         f"unknown project {target!r}"
                     )
         return self
+
+
+def passphrase_environ(env_file: Path | None) -> dict[str, str]:
+    """The variables ``passphrase_env`` can refer to: the environment over ``env_file``.
+
+    pydantic-settings reads the ``.env`` file only into the ``Settings`` fields and
+    never exports it, so a passphrase variable kept there would not be found in
+    ``os.environ``. The real environment wins, as it does for the settings.
+    """
+    from_file: dict[str, str] = {}
+    if env_file is not None and env_file.is_file():
+        from_file = {
+            key: value for key, value in dotenv_values(env_file).items() if value is not None
+        }
+    return {**from_file, **os.environ}
 
 
 def load_config(path: Path) -> VaultrConfig:

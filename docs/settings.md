@@ -2,7 +2,9 @@
 
 Runtime behaviour is configured through environment variables, all prefixed with
 `VAULTR_`. A `.env` file in the working directory is read as well, which is handy for
-local development; see `.env.example`.
+local development; see `.env.example`. The variables a project names in
+[`passphrase_env`](configuration.md) can live in that file too. A variable set in the
+real environment always takes precedence over the same one in `.env`.
 
 | Variable                | Default      | Description                                                          |
 | ----------------------- | ------------ | -------------------------------------------------------------------- |
