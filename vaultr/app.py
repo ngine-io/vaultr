@@ -15,7 +15,7 @@ from vaultr.config import ConfigError, load_config, passphrase_environ
 from vaultr.logging import configure_logging
 from vaultr.mcp_server import build_mcp_server
 from vaultr.metadata import API_DOCS_PATH, MCP_PATH
-from vaultr.routes import api, health, web
+from vaultr.routes import api, docs, health, web
 from vaultr.security import token_is_valid
 from vaultr.settings import ENV_FILE, Settings
 from vaultr.vault import VaultService
@@ -84,7 +84,9 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         version=__version__,
         lifespan=lifespan,
         root_path=settings.root_path,
-        docs_url=API_DOCS_PATH if settings.docs_enabled else None,
+        # FastAPI's own docs page loads Swagger UI from a CDN, which the Content
+        # Security Policy blocks; routes/docs.py serves it from /static instead.
+        docs_url=None,
         redoc_url=None,
         openapi_url=f"{API_DOCS_PATH}/openapi.json" if settings.docs_enabled else None,
     )
@@ -110,6 +112,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(health.router)
     app.include_router(api.router)
     app.include_router(web.router)
+    if settings.docs_enabled:
+        app.include_router(docs.router)
 
     app.state.mcp_server = None
     if settings.mcp_enabled:
