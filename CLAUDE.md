@@ -40,7 +40,7 @@ pytest uses `--strict-markers --strict-config`, and `filterwarnings = error`. An
 
 **Size limits:** `max_secret_length` caps plaintext. Vault text accepted for re-encryption is capped by the derived `max_vault_text_length()`, because a vault string is about 4.6x the size of its plaintext.
 
-**Frontend:** Jinja2 templates in `vaultr/templates/` (the partials and inline SVG icons are in subdirectories), with Tabler CSS and htmx. Nothing is compiled; `make assets` only copies files. The Content Security Policy only allows content from the app's own origin (`'self'`), so never add CDN assets or inline scripts. Without `make assets` the app still starts but the UI is unstyled. The package-data globs in `pyproject.toml` must stay recursive (`**`), or the partials are dropped from the wheel.
+**Frontend:** Jinja2 templates in `vaultr/templates/` (the partials and inline SVG icons are in subdirectories), with Tabler CSS and htmx. Nothing is compiled; `make assets` only copies files. The Content Security Policy only allows content from the app's own origin (`'self'`), so never add CDN assets or inline scripts. That is also why `routes/docs.py` serves Swagger UI at `/api` from `static/` (copied from `swagger-ui-dist`, started by `assets/swagger-init.js`) instead of FastAPI's built-in docs page, which loads it from a CDN. Without `make assets` the app still starts but the UI is unstyled. The package-data globs in `pyproject.toml` must stay recursive (`**`), or the partials are dropped from the wheel.
 
 ## Tests
 

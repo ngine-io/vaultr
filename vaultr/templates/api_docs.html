@@ -1,0 +1,15 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <title>{{ app_name }} API</title>
+  <link rel="stylesheet" href="{{ url_for('static', path='/css/swagger-ui.css').path }}">
+</head>
+<body>
+  <div id="swagger-ui" data-openapi-url="{{ openapi_url }}"></div>
+  <script src="{{ url_for('static', path='/js/swagger-ui-bundle.js').path }}"></script>
+  <script src="{{ url_for('static', path='/js/swagger-init.js').path }}"></script>
+</body>
+</html>
