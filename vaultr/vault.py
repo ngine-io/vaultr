@@ -9,6 +9,7 @@ plaintext is ever written to a file or an argument vector.
 from __future__ import annotations
 
 import re
+from collections.abc import Mapping
 from dataclasses import dataclass
 
 from ansible.errors import AnsibleError
@@ -129,13 +130,15 @@ class VaultService:
     fails at startup rather than on the first request.
     """
 
-    def __init__(self, projects: list[ProjectConfig]) -> None:
+    def __init__(
+        self, projects: list[ProjectConfig], environ: Mapping[str, str] | None = None
+    ) -> None:
         self._projects: dict[str, Project] = {}
         self._vaults: dict[str, VaultLib] = {}
 
         for project in projects:
             vault_id = project.vault_id or DEFAULT_VAULT_ID
-            passphrase = VaultSecret(project.resolve_passphrase().encode("utf-8"))
+            passphrase = VaultSecret(project.resolve_passphrase(environ).encode("utf-8"))
             self._vaults[project.name] = VaultLib(secrets=[(vault_id, passphrase)])
             self._projects[project.name] = Project(
                 name=project.name,
@@ -147,8 +150,10 @@ class VaultService:
             )
 
     @classmethod
-    def from_config(cls, config: VaultrConfig) -> VaultService:
-        return cls(config.projects)
+    def from_config(
+        cls, config: VaultrConfig, environ: Mapping[str, str] | None = None
+    ) -> VaultService:
+        return cls(config.projects, environ)
 
     @property
     def projects(self) -> list[Project]:

@@ -5,8 +5,13 @@ from __future__ import annotations
 from pathlib import Path
 
 import pytest
+from ansible.parsing.vault import VaultLib, VaultSecret
+from fastapi.testclient import TestClient
 
-from vaultr.config import ConfigError, ProjectConfig, load_config
+from vaultr.app import create_app
+from vaultr.config import ConfigError, ProjectConfig, load_config, passphrase_environ
+from vaultr.settings import Settings
+from vaultr.vault import DEFAULT_VAULT_ID
 
 
 def write(tmp_path: Path, content: str) -> Path:
@@ -168,3 +173,56 @@ class TestReencryptTargets:
             tmp_path, "projects:\n  - name: a\n    passphrase: x\n    reencrypt_targets: [a]\n"
         )
         assert load_config(path).projects[0].reencrypt_targets == ["a"]
+
+
+def test_passphrase_env_resolves_from_a_given_environ(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.delenv("VAULTR_TEST_PASSPHRASE", raising=False)
+    project = ProjectConfig(name="a", passphrase_env="VAULTR_TEST_PASSPHRASE")
+    assert project.resolve_passphrase({"VAULTR_TEST_PASSPHRASE": "given"}) == "given"
+
+
+def test_passphrase_environ_reads_the_env_file(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.delenv("VAULTR_FROM_DOTENV", raising=False)
+    env_file = tmp_path / ".env"
+    env_file.write_text("VAULTR_FROM_DOTENV=from-dotenv\nVAULTR_UNSET\n")
+    environ = passphrase_environ(env_file)
+    assert environ["VAULTR_FROM_DOTENV"] == "from-dotenv"
+    # A bare key without a value is not a passphrase.
+    assert "VAULTR_UNSET" not in environ
+
+
+def test_passphrase_environ_prefers_the_real_environment(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setenv("VAULTR_BOTH", "from-env")
+    env_file = tmp_path / ".env"
+    env_file.write_text("VAULTR_BOTH=from-dotenv\n")
+    assert passphrase_environ(env_file)["VAULTR_BOTH"] == "from-env"
+
+
+def test_passphrase_environ_without_an_env_file(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setenv("VAULTR_ONLY_ENV", "from-env")
+    assert passphrase_environ(tmp_path / "absent")["VAULTR_ONLY_ENV"] == "from-env"
+    assert passphrase_environ(None)["VAULTR_ONLY_ENV"] == "from-env"
+
+
+def test_app_starts_with_a_passphrase_from_the_env_file(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The bug this guards against: .env passphrases never reached passphrase_env."""
+    monkeypatch.delenv("VAULTR_DOTENV_PASSPHRASE", raising=False)
+    monkeypatch.chdir(tmp_path)
+    (tmp_path / ".env").write_text("VAULTR_DOTENV_PASSPHRASE=dotenv-secret\n")
+    config_file = write(
+        tmp_path, "projects:\n  - name: a\n    passphrase_env: VAULTR_DOTENV_PASSPHRASE\n"
+    )
+    settings = Settings(config_file=config_file, api_tokens=[], _env_file=None)
+    with TestClient(create_app(settings)) as client:
+        response = client.post("/api/v1/encrypt", json={"project": "a", "secret": "hello"})
+    assert response.status_code == 200, response.text
+    vault = VaultLib(secrets=[(DEFAULT_VAULT_ID, VaultSecret(b"dotenv-secret"))])
+    assert vault.decrypt(response.json()["vault_text"]) == b"hello"

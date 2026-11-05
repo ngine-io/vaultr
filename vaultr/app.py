@@ -11,13 +11,13 @@ from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 from loguru import logger
 
-from vaultr.config import ConfigError, load_config
+from vaultr.config import ConfigError, load_config, passphrase_environ
 from vaultr.logging import configure_logging
 from vaultr.mcp_server import build_mcp_server
 from vaultr.metadata import API_DOCS_PATH, MCP_PATH
 from vaultr.routes import api, health, web
 from vaultr.security import token_is_valid
-from vaultr.settings import Settings
+from vaultr.settings import ENV_FILE, Settings
 from vaultr.vault import VaultService
 from vaultr.version import __version__
 
@@ -42,7 +42,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None]:
     settings: Settings = app.state.settings
 
     config = load_config(settings.config_file)
-    app.state.vault_service = VaultService.from_config(config)
+    app.state.vault_service = VaultService.from_config(config, passphrase_environ(ENV_FILE))
 
     logger.info(
         "{} {} ready with {} project(s) from {}",

@@ -6,13 +6,16 @@ from typing import Annotated
 from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, NoDecode, SettingsConfigDict
 
+ENV_FILE = Path(".env")
+"""Read for the settings, and for the variables named by ``passphrase_env``."""
+
 
 class Settings(BaseSettings):
     """Deployment settings. Every field maps to a ``VAULTR_``-prefixed variable."""
 
     model_config = SettingsConfigDict(
         env_prefix="VAULTR_",
-        env_file=".env",
+        env_file=ENV_FILE,
         env_file_encoding="utf-8",
         extra="ignore",
     )
